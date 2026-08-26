@@ -1,0 +1,366 @@
+﻿#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# -*- Python -*-
+
+# <rtc-template block="description">
+"""
+ @file ManagerRTC.py
+ @brief ModuleDescription
+ @date $Date$
+
+
+"""
+# </rtc-template>
+
+import sys
+import time
+import math
+sys.path.append(".")
+
+# Import RTM module
+import RTC
+import OpenRTM_aist
+
+import crane_control_idl
+
+import CORBA
+
+# Import Service implementation class
+# <rtc-template block="service_impl">
+
+# </rtc-template>
+
+# Import Service stub modules
+# <rtc-template block="consumer_import">
+import _GlobalIDL, _GlobalIDL__POA
+
+
+# </rtc-template>
+
+
+# This module's spesification
+# <rtc-template block="module_spec">
+managerrtc_spec = ["implementation_id", "ManagerRTC", 
+         "type_name",         "ManagerRTC", 
+         "description",       "ModuleDescription", 
+         "version",           "1.0.0", 
+         "vendor",            "VenderName", 
+         "category",          "Category", 
+         "activity_type",     "PERIODIC", 
+         "max_instance",      "1", 
+         "language",          "Python", 
+         "lang_type",         "SCRIPT",
+         ""]
+# </rtc-template>
+
+# <rtc-template block="component_description">
+##
+# @class ManagerRTC
+# @brief ModuleDescription
+# 
+# 
+# </rtc-template>
+class ManagerRTC(OpenRTM_aist.DataFlowComponentBase):
+	
+    ##
+    # @brief constructor
+    # @param manager Maneger Object
+    # 
+    def __init__(self, manager):
+        OpenRTM_aist.DataFlowComponentBase.__init__(self, manager)
+
+        self._d_result = OpenRTM_aist.instantiateDataType(RTC.TimedString)
+        """
+        """
+        self._resultIn = OpenRTM_aist.InPort("result", self._d_result)
+        self._d_kobukiout = OpenRTM_aist.instantiateDataType(RTC.TimedVelocity2D)
+        """
+        """
+        self._kobukioutOut = OpenRTM_aist.OutPort("kobukiout", self._d_kobukiout)
+
+        """
+        """
+        self._CraneArmPortPort = OpenRTM_aist.CorbaPort("CraneArmPort")
+
+
+        self._d_text = OpenRTM_aist.instantiateDataType(RTC.TimedString)
+        """
+        """
+        self._textIn = OpenRTM_aist.InPort("text", self._d_text)
+
+		
+
+        """
+        """
+        self.__craneArm0 = OpenRTM_aist.CorbaConsumer(interfaceType=_GlobalIDL.CraneArmService)
+
+        # initialize of configuration-data.
+        # <rtc-template block="init_conf_param">
+		
+        # </rtc-template>
+
+
+		 
+    ##
+    #
+    # The initialize action (on CREATED->ALIVE transition)
+    # 
+    # @return RTC::ReturnCode_t
+    # 
+    #
+    def onInitialize(self):
+        # Bind variables and configuration variable
+		
+        # Set InPort buffers
+        self.addInPort("result",self._resultIn)
+
+        self.addInPort("text",self._textIn)
+		
+        # Set OutPort buffers
+        self.addOutPort("kobukiout",self._kobukioutOut)
+		
+        # Set service provider to Ports
+		
+        # Set service consumers to Ports
+        self._CraneArmPortPort.registerConsumer("craneservice", "CraneArmService", self.__craneArm0)
+		
+        # Set CORBA Service Ports
+        self.addPort(self._CraneArmPortPort)
+		
+        return RTC.RTC_OK
+	
+    ###
+    ## 
+    ## The finalize action (on ALIVE->END transition)
+    ## 
+    ## @return RTC::ReturnCode_t
+    ##
+    ## 
+    #def onFinalize(self):
+    #
+
+    #    return RTC.RTC_OK
+	
+    ###
+    ##
+    ## The startup action when ExecutionContext startup
+    ## 
+    ## @param ec_id target ExecutionContext Id
+    ##
+    ## @return RTC::ReturnCode_t
+    ##
+    ##
+    #def onStartup(self, ec_id):
+    #
+    #    return RTC.RTC_OK
+	
+    ###
+    ##
+    ## The shutdown action when ExecutionContext stop
+    ##
+    ## @param ec_id target ExecutionContext Id
+    ##
+    ## @return RTC::ReturnCode_t
+    ##
+    ##
+    #def onShutdown(self, ec_id):
+    #
+    #    return RTC.RTC_OK
+	
+    ##
+    #
+    # The activated action (Active state entry action)
+    #
+    # @param ec_id target ExecutionContext Id
+    # 
+    # @return RTC::ReturnCode_t
+    #
+    #
+    def onActivated(self, ec_id):
+
+
+
+    
+        return RTC.RTC_OK
+	
+    ###
+    ##
+    ## The deactivated action (Active state exit action)
+    ##
+    ## @param ec_id target ExecutionContext Id
+    ##
+    ## @return RTC::ReturnCode_t
+    ##
+    ##
+    #def onDeactivated(self, ec_id):
+    #
+    #    return RTC.RTC_OK
+	
+    ##
+    #
+    # The execution action that is invoked periodically
+    #
+    # @param ec_id target ExecutionContext Id
+    #
+    # @return RTC::ReturnCode_t
+    #
+    #
+
+
+    def onExecute(self, ec_id):
+
+        if self._textIn.isNew():
+            text = self._textIn.read().data.strip()
+            print("受信:", text)
+            parts = text.split(",")
+
+            if parts[0] == "kobuki" and len(parts) >= 3:
+                try:
+                    vx = float(parts[1])
+                    va = float(parts[2])
+                    self._d_kobukiout.data.vx = vx
+                    self._d_kobukiout.data.vy = 0.0
+                    self._d_kobukiout.data.va = va
+                    OpenRTM_aist.setTimestamp(self._d_kobukiout)
+                    self._kobukioutOut.write()
+                    print("kobuki: vx=%.2f va=%.2f" % (vx, va))
+                except ValueError:
+                    print("数値変換失敗:", text)
+
+            elif parts[0] == "hand" and len(parts) >= 2:
+                try:
+                    deg = float(parts[1].strip())
+                except ValueError:
+                    print("数値変換失敗:", text)
+                    deg = None
+
+                if deg is not None:
+                    ptr = self._get_arm()
+                    if ptr:
+                        try:
+                            print("strike(%.1f): %s" % (deg, ptr.strike(deg)))
+                        except Exception as e:
+                            print("strike失敗:", e)
+
+        if self._resultIn.isNew():
+            result = self._resultIn.read().data
+            print("result:", result)
+
+            if result.lower() == "broken":
+                ptr = self._get_arm()
+                if ptr:
+                    try:
+                        print("celebrate:", ptr.celebrate())
+                    except Exception as e:
+                        print("celebrate失敗:", e)
+
+        return RTC.RTC_OK
+
+    def _get_arm(self):
+        ptr = self.__craneArm0._ptr()
+        if CORBA.is_nil(ptr):
+            print("CraneArm 未接続")
+            return None
+        return ptr
+    
+
+	
+    ###
+    ##
+    ## The aborting action when main logic error occurred.
+    ##
+    ## @param ec_id target ExecutionContext Id
+    ##
+    ## @return RTC::ReturnCode_t
+    ##
+    ##
+    #def onAborting(self, ec_id):
+    #
+    #    return RTC.RTC_OK
+	
+    ###
+    ##
+    ## The error action in ERROR state
+    ##
+    ## @param ec_id target ExecutionContext Id
+    ##
+    ## @return RTC::ReturnCode_t
+    ##
+    ##
+    #def onError(self, ec_id):
+    #
+    #    return RTC.RTC_OK
+	
+    ###
+    ##
+    ## The reset action that is invoked resetting
+    ##
+    ## @param ec_id target ExecutionContext Id
+    ##
+    ## @return RTC::ReturnCode_t
+    ##
+    ##
+    #def onReset(self, ec_id):
+    #
+    #    return RTC.RTC_OK
+	
+    ###
+    ##
+    ## The state update action that is invoked after onExecute() action
+    ##
+    ## @param ec_id target ExecutionContext Id
+    ##
+    ## @return RTC::ReturnCode_t
+    ##
+    ##
+    #def onStateUpdate(self, ec_id):
+    #
+    #    return RTC.RTC_OK
+	
+    ###
+    ##
+    ## The action that is invoked when execution context's rate is changed
+    ##
+    ## @param ec_id target ExecutionContext Id
+    ##
+    ## @return RTC::ReturnCode_t
+    ##
+    ##
+    #def onRateChanged(self, ec_id):
+    #
+    #    return RTC.RTC_OK
+	
+
+
+
+def ManagerRTCInit(manager):
+    profile = OpenRTM_aist.Properties(defaults_str=managerrtc_spec)
+    manager.registerFactory(profile,
+                            ManagerRTC,
+                            OpenRTM_aist.Delete)
+
+def MyModuleInit(manager):
+    ManagerRTCInit(manager)
+
+    # create instance_name option for createComponent()
+    instance_name = [i for i in sys.argv if "--instance_name=" in i]
+    if instance_name:
+        args = instance_name[0].replace("--", "?")
+    else:
+        args = ""
+  
+    # Create a component
+    comp = manager.createComponent("ManagerRTC" + args)
+
+def main():
+    # remove --instance_name= option
+    argv = [i for i in sys.argv if not "--instance_name=" in i]
+    # Initialize manager
+    mgr = OpenRTM_aist.Manager.init(sys.argv)
+    mgr.setModuleInitProc(MyModuleInit)
+    mgr.activateManager()
+    mgr.runManager()
+
+if __name__ == "__main__":
+    main()
+

@@ -1,0 +1,5 @@
+interface CraneArmService {
+    boolean strike(in double j1_angle);
+    boolean goHome();
+    boolean celebrate();
+};
