@@ -57,7 +57,7 @@ class PathFollowRTC(OpenRTM_aist.DataFlowComponentBase):
         self._d_end = OpenRTM_aist.instantiateDataType(RTC.TimedBoolean)
         """
         """
-        self._endIn = OpenRTM_aist.InPort("path", self._d_end)
+        self._endIn = OpenRTM_aist.InPort("end", self._d_end)
 
         self._d_pose = OpenRTM_aist.instantiateDataType(RTC.TimedPose2D)
         """
@@ -137,6 +137,15 @@ class PathFollowRTC(OpenRTM_aist.DataFlowComponentBase):
         return RTC.RTC_OK
 
     def onExecute(self, ec_id):
+
+
+        if self._endIn.isNew():
+
+            if self._endIn.read().data:
+                print("割れた")
+                self._reset()
+                self._write_velocity(0.0, 0.0)
+                return RTC.RTC_OK
         # 自己位置
         if self._poseIn.isNew():
             p = self._poseIn.read().data
@@ -173,25 +182,17 @@ class PathFollowRTC(OpenRTM_aist.DataFlowComponentBase):
             self._write_velocity(0.0, 0.0)
             return RTC.RTC_OK
 
-        if self.endIn.isNew():
-            if self._endIn.read().data:
-
-                self._path = [] #初期化
-                self._idx = 0
-                self._has_pose = False
-                self._done = True
-                self._pending_raw = None
-                self._x = 0.0
-                self._y = 0.0
-                self._th = 0.0
-
-                self._write_velocity(0.0,0.0)
-                return RTC.RTC_OK
 
         vx, va = self._pure_pursuit()
-
+        print(vx,va)
         self._write_velocity(vx, va)
         return RTC.RTC_OK
+
+    def _reset(self):
+        self._path = []
+        self._idx = 0
+        self._done = True
+        self._pending_raw = None
 
     def _pure_pursuit(self):
         Ld = max(0.01, self._look_ahead[0]) #ゼロ割防止
