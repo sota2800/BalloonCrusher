@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+<meta charset="UTF-8">
+
+<title>Balloon Detector</title>
+
+<style>
+
+body {
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+.container {
+    width: 1100px;
+    margin: auto;
+}
+
+.camera-box {
+    margin-top: 20px;
+}
+
+#camera {
+    width: 900px;
+    border-radius: 15px;
+}
+
+#status {
+    font-size: 55px;
+    font-weight: bold;
+    margin: 25px;
+}
+
+.normal {
+    color: #00ff88;
+}
+
+.broken {
+    color: #ff4444;
+}
+
+button {
+    width: 220px;
+    height: 70px;
+    margin: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.start {
+    background: #21c55d;
+    color: white;
+}
+
+.reset {
+    background: #ef4444;
+    color: white;
+}
+
+</style>
+</head>
+
+
+<body>
+
+<div class="container">
+
+<h1>BALLOON DETECTOR</h1>
+
+<div class="camera-box">
+
+<img
+    id="camera"
+    src="/image"
+>
+
+</div>
+
+
+<h2>BROKEN COLOR</h2>
+
+<div
+    id="status"
+    class="normal"
+>
+NONE
+</div>
+
+<button
+    class="reset"
+    onclick="resetSystem()"
+>
+RESET
+</button>
+
+</div>
+
+
+<script>
+
+function updateImage()
+{
+    document.getElementById("camera").src =
+        "/image?t=" + Date.now();
+}
+
+function updateStatus()
+{
+    fetch("/status")
+    .then(res => res.text())
+    .then(data => {
+
+        let status =
+            document.getElementById("status");
+
+        status.innerText = data;
+
+        if (data !== "NONE")
+        {
+            status.className = "broken";
+        }
+        else
+        {
+            status.className = "normal";
+        }
+    });
+}
+
+function resetSystem()
+{
+    fetch(
+        "/reset",
+        {
+            method: "POST"
+        }
+    );
+}
+
+setInterval(updateImage, 150);
+setInterval(updateStatus, 200);
+
+</script>
+
+</body>
+
+</html>
